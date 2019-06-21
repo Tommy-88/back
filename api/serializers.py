@@ -34,3 +34,14 @@ class ProjectTelNumberSerializer(serializers.ModelSerializer):
         fields = [
             'telNumber'
         ]
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = [
+            'id',
+            'name',
+            'targetAmount',
+            'currentAmount'
+        ]

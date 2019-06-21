@@ -26,7 +26,6 @@ class Payment(APIView):
     parser_classes = (JSONParser,)
 
     def get(self, request):
-        # TODO надо реализовать добавление записи и поиск записей в бд
         api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
         buffer = request.data
         s = requests.Session()
@@ -58,7 +57,7 @@ class Payment(APIView):
 
         return Response(h1, status=status.HTTP_200_OK)
 
-# TODO требуется указать адрес сервера
+# TODO требуется указать адрес сервера, пока не работает
 class CheckPayment(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
@@ -75,10 +74,9 @@ class CheckPayment(APIView):
         if hash_var == signature:
             h3 = s.get('https://api.qiwi.com/partner/bill/v1/bills/' + buffer['billId'])
             json.loads(h3.text)
-            # TODO ответ - результат проверки 0
         else:
             a=1
-            # TODO ответ - результат проверки не 0
+
 
 
 class Registration (generics.CreateAPIView):
@@ -106,6 +104,13 @@ class Registration (generics.CreateAPIView):
 class CreateProject (generics.CreateAPIView):
     serializer_class = ProjectSerializer
     Response(status=status.HTTP_201_CREATED)
+
+
+class ProjectListView(generics.ListAPIView):
+    #Вывод общего списка компаний
+    serializer_class = ProjectSerializer
+    queryset = Project.objects.all().order_by('date')[:20]
+    Response(status=status.HTTP_200_OK)
 
 
 
