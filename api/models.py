@@ -15,7 +15,7 @@ class Project(models.Model):
     name = models.CharField(max_length=100)
     id_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='User')
     targetAmount = models.FloatField()
-    currentAmount = models.FloatField()
+    currentAmount = models.FloatField(default=0)
     description = models.TextField()
     isActive = models.BooleanField(default=True)
     # TODO обсудить, какие темы будут, добавить
@@ -38,6 +38,13 @@ class Transaction(models.Model):
     id_user = models.ForeignKey(User, on_delete=models.CASCADE)
     id_projects = models.ForeignKey(Project, on_delete=models.CASCADE)
     payment = models.FloatField()
+    STATUS_TYPES = (
+        (1, 'WAITING'),  # выставлен ожидает оплаты
+        (2, 'PAID'),  # оплачен
+        (3, 'REJECTED'),  # отклонен
+        (4, 'EXPIRED'),  # время жизни истекло, счёт не оплачен
+    )
+    status = models.IntegerField(choices=STATUS_TYPES)
     status = models.TextField()
     expirationTime = models.CharField(max_length=120)
     siteId = models.TextField()

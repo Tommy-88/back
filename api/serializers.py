@@ -2,13 +2,13 @@ from rest_framework import serializers
 from .models import *
 
 
-class ProjectSerializer(serializers.Serializer):
+class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = '__all__'
 
 
-class TransactionSerializer(serializers.Serializer):
+class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = '__all__'
@@ -36,7 +36,7 @@ class ProjectTelNumberSerializer(serializers.ModelSerializer):
         ]
 
 
-class ProjectSerializer(serializers.ModelSerializer):
+class ProjectSerializerUser(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = [
@@ -44,4 +44,16 @@ class ProjectSerializer(serializers.ModelSerializer):
             'name',
             'targetAmount',
             'currentAmount'
+        ]
+
+
+class ProjectListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = [
+            'id',
+            'name',
+            'targetAmount',
+            'currentAmount',
+            'date'
         ]

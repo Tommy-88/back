@@ -108,11 +108,25 @@ class CreateProject (generics.CreateAPIView):
 
 class ProjectListView(generics.ListAPIView):
     #Вывод общего списка компаний
-    serializer_class = ProjectSerializer
+    serializer_class = ProjectListSerializer
     queryset = Project.objects.all().order_by('date')[:20]
-    Response(status=status.HTTP_200_OK)
 
 
+class ShowUserProjectsView(APIView):
 
+    def get(self, request):
+        buffer = ProjectSerializerUser(Project.objects.filter(id_user=request.data['id']), many= True)
+        return Response(buffer.data)
+
+
+class ShowProjectsTopicView(APIView):
+    def get(self, request):
+        buffer = ProjectListSerializer(Project.objects.filter(topic = request.data['topic']), many= True)
+        return Response(buffer.data)
+
+#class TestView(APIView):
+
+ #   def get(self):
+  #      Projects = Project.objects.all.select_related()
 
 
