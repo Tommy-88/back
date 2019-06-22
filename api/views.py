@@ -124,6 +124,15 @@ class ShowProjectsTopicView(APIView):
         buffer = ProjectListSerializer(Project.objects.filter(topic = request.data['topic']), many= True)
         return Response(buffer.data)
 
+
+class ChangeProjectStatusView(APIView):
+    def patch(self, request):
+        buffer = Project.objects.get(id__exact=request.data['id'])
+        buffer.isActive = False
+        buffer.save()
+        return Response(status=status.HTTP_200_OK)
+
+    #request.data['id']
 #class TestView(APIView):
 
  #   def get(self):
