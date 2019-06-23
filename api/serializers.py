@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import *
 
+# Сериалайзеры со всеми полями для каждой модели
 
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,6 +20,8 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = '__all__'
 
+
+# Сериалайзеры для обработчиков с нужными полями
 
 class UserEmailSerializer(serializers.ModelSerializer):
     class Meta:

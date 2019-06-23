@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from .views import *
 
+# TODO сделать нормальные url, утвердить с фронтом
 urlpatterns = [
     path('hello', Payment.as_view()),
     path('user/create', Registration.as_view()),
