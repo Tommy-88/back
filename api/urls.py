@@ -11,5 +11,6 @@ urlpatterns = [
     #path('test', TestView.as_view())
     path('user/project', ShowUserProjectsView.as_view()),
     path('project/topic', ShowProjectsTopicView.as_view()),
-    path('project/status', ChangeProjectStatusView.as_view())
+    path('project/status', ChangeProjectStatusView.as_view()),
+    path('show/project', ShowProjectView.as_view())
 ]
