@@ -5,6 +5,7 @@ from django.utils import timezone
 
 # TODO эта модель не является дефолтной (создается отдельная таблица), подумать, как можно сделать юзеров в одной дефолтной модели
 # TODO подумать, как сделать авторизацию
+# TODO еще раз обсудить модели; там, где нужно, поменять поля
 class User(models.Model):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=30)
@@ -32,7 +33,7 @@ class Project(models.Model):
     # Дальше идут реквизиты
     telNumber = models.CharField(max_length=12, unique=True)
 
-
+# Транзакции для QIWI KASSA
 class Transaction(models.Model):
     # TODO Billid должен быть рандомное 6 значное число+unix - время в формате string; подумать, можно ли обойтись только им, как тогда его генерировать, если нет, то сдлеать id и BillId отдельно
     id_user = models.ForeignKey(User, on_delete=models.CASCADE)

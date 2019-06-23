@@ -19,8 +19,20 @@ import hashlib
 import base64
 from .models import *
 
-# Create your views here.
+# TODO сделать нормальные url; там, где нужно, реализовать получение данных с помощью GET параметров
+# ДЛЯ ФРОНТА: посмотрите доки от Миши
 
+
+# Обработчик для "Перечислить сумму на QIWI кошелек", отправляется json c параметрами, адрес http://localhost/api/v1/hello, запрос GET
+"""
+Пример json для запроса к API
+    {
+        "payment" : 100,
+        "expirationTime" : "2018-04-15T14:30:00+03:00",
+        "id_project" : 2,
+        "id_user" : 5
+    }
+"""
 class Payment(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
@@ -54,9 +66,16 @@ class Payment(APIView):
         k = json.loads(h1.text)
         t = Transaction(id_user=User.objects.get(id__exact=buffer['id_user']), id_projects = Project.objects.get(id__exact=buffer['id_project']), payment = val, status = k['status']['value'], siteId = k['siteId'], billId= 'bill_id' , expirationTime=buffer['expirationTime'])
         t.save()
-
+        """
+            Формат ответа в доках "Перечислить сумму"
+        """
         return Response(h1, status=status.HTTP_200_OK)
 
+
+
+
+
+# Обработчик для получения уведомлений об оплате
 # TODO требуется указать адрес сервера, пока не работает
 class CheckPayment(APIView):
     renderer_classes = (JSONRenderer,)
@@ -79,6 +98,18 @@ class CheckPayment(APIView):
 
 
 
+
+
+# Обработчик "Регистрация", отправляется json с параметрами, адрес http://localhost/api/v1/user/create, запрос POST
+# TODO Можно сделать отправку уведомления на почту, по идее это делается не особо сложно
+"""
+    Пример json 
+    {
+        "email" : "example@ex.ex",
+        "password" : "1234",
+        "name" : "example"
+    }
+"""
 class Registration (generics.CreateAPIView):
     # TODO Можно сделать отправку уведомления на почту, по идее это делается не особо сложно
     '''
@@ -97,21 +128,85 @@ class Registration (generics.CreateAPIView):
         message = 'содержание'
         send_mail(subject, message, 'ящик, из которого отсылается сообщение', ['куда отсылать'])
     '''
+    renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser,)
     serializer_class = UserSerializer
+    """
+        ответ - статус 201
+    """
     Response(status=status.HTTP_201_CREATED)
 
 
+
+
+
+# Обработчик "Создание проекта пользователем", отправляется json с параметрами, адрес http://localhost/api/v1/project/create, запрос POST
+"""
+    Пример json
+    {
+        "name" : "example",
+        "id_user" : 2,
+        "targetAmount" : 100.0,
+        "currentAmount" : 10.0,
+        "description" : "example example",
+        "topic" : 2,
+        "telNumber" "+78005553535"
+    }
+"""
 class CreateProject (generics.CreateAPIView):
     serializer_class = ProjectSerializer
+    """
+        ответ - статус 201
+    """
     Response(status=status.HTTP_201_CREATED)
 
 
+
+
+
+# Обработчик "Вывести 20 проектов", сортировка по дате, адрес http://localhost/api/v1/show/projects, запрос GET
 class ProjectListView(generics.ListAPIView):
-    #Вывод общего списка компаний
     serializer_class = ProjectListSerializer
     queryset = Project.objects.all().order_by('date')[:20]
+    """
+        ответ - json файл с списком проектов
+        Пример 
+[
+    {
+        "id": 1,
+        "name": "Example1",
+        "targetAmount": 1000,
+        "currentAmount": 100,
+        "date": "2019-06-21T19:28:27Z"
+    },
+    {
+        "id": 2,
+        "name": "Example2",
+        "targetAmount": 99,
+        "currentAmount": 10,
+        "date": "2019-06-22T12:33:00Z"
+    },
+    {
+        "id": 3,
+        "name": "Example 3 ",
+        "targetAmount": 100,
+        "currentAmount": 10,
+        "date": "2019-06-22T12:33:57Z"
+    }
+]
+    """
 
 
+
+
+
+# Обработчик "Показать все проекты пользователя", отправляется json с параметрами, адрес http://localhost/api/v1/user/project, запрос GET
+"""
+Пример json
+{
+    "id" : 1
+}
+"""
 class ShowUserProjectsView(APIView):
 
     def get(self, request):
@@ -119,20 +214,77 @@ class ShowUserProjectsView(APIView):
         return Response(buffer.data)
 
 
+
+
+
+# Обработчик "Показать все проекты по выбранной теме", отправляется json с параметрами, адрес http://localhost/api/v1/project/topic, запрос GET
+"""
+Пример json
+{
+    "topic" : 2
+}
+"""
 class ShowProjectsTopicView(APIView):
     def get(self, request):
         buffer = ProjectListSerializer(Project.objects.filter(topic = request.data['topic']), many= True)
+        """
+            Пример ответа
+[
+    {
+        "id": 3,
+        "name": "Example",
+        "targetAmount": 100,
+        "currentAmount": 10,
+        "date": "2019-06-22T12:33:57Z"
+    }
+]
+        """
         return Response(buffer.data)
 
 
+
+
+
+# Обработчик "Сделать проект неактивным", отправляется json с параметрами, адрес http://localhost/api/v1/project/status, запрос PATCH
+"""
+Пример json
+{
+    "id": 2
+}
+"""
 class ChangeProjectStatusView(APIView):
     def patch(self, request):
         buffer = Project.objects.get(id__exact=request.data['id'])
         buffer.isActive = False
         buffer.save()
+        """
+            ответ - статус 200
+        """
         return Response(status=status.HTTP_200_OK)
 
+
+
+
+
+
+
+
+
     #request.data['id']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #class TestView(APIView):
 
  #   def get(self):
