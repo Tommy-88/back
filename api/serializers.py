@@ -60,3 +60,9 @@ class ProjectListSerializer(serializers.ModelSerializer):
             'currentAmount',
             'date'
         ]
+
+class ProjectShowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = '__all__'
+        depth = 1

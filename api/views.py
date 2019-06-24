@@ -270,9 +270,11 @@ class ChangeProjectStatusView(APIView):
 
 
 class ShowProjectView(APIView):
-
+    renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser,)
     def get(self, request):
-        buffer = ProjectSerializer(Project.objects.get(id__exact=request.data['id']))
+        buffer = Project.objects.get(id__exact=2)
+        s = ProjectShowSerializer(buffer)
         """
             Пример ответа json
 {
@@ -288,6 +290,6 @@ class ShowProjectView(APIView):
     "id_user": 3
 }
         """
-        return Response(buffer.data)
+        return Response(s.data)
 
 
