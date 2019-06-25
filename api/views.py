@@ -234,7 +234,7 @@ class Registration(generics.CreateAPIView):
 
 
 class CreateProject(APIView):
-    def get(self, request):
+    def post(self, request):
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
         buffer = request.data
         if stk == 1:
