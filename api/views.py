@@ -157,19 +157,27 @@ class CheckPayment(APIView):
     def post(self, request):
         # TODO получить сигнатуру из запроса обновить статус транзакции в бд и currentAmount у проекта
         s = requests.Session()
-        signature = ""
+        signature = request.META['HTTP_X_API_SIGNATURE_SHA256']
         buffer = request.data
         invoice_parameters = buffer['amount']['currency'] + "|" + buffer['amount']['value'] + "|" + buffer[
             'billId'] + "|" + buffer['siteId'] + "|" + buffer['status']['value']
         api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
-        dig = hmac.new(api_access_token, msg=invoice_parameters, digestmod=hashlib.sha256).digest()
-        hash_var = base64.b64encode(dig).decode
-        if hash_var == signature:
-            h3 = s.get('https://api.qiwi.com/partner/bill/v1/bills/' + buffer['billId'])
-            json.loads(h3.text)
-        else:
-            a = 1
 
+        dig = hmac.digest(api_access_token, msg=invoice_parameters, digest=hashlib.sha256)
+        print(signature)
+        print(dig)
+        if dig == signature:
+            h3 = s.get('https://api.qiwi.com/partner/bill/v1/bills/' + buffer['billId'])
+            k=json.loads(h3.text)
+            t = Transaction.objects.filter(billId=k['billId'])
+            pr=Project.objects.filter(id__exact=t.id_user)
+            pr.currentAmount+=float(k['value'])
+            pr.save()
+            t.status = 2
+            t.save()
+            return Response({"error" : "0"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error" : "1"})
 
 # Обработчик "Регистрация", отправляется json с параметрами, адрес http://localhost/api/v1/user/create, запрос POST
 # TODO Можно сделать отправку уведомления на почту, по идее это делается не особо сложно
