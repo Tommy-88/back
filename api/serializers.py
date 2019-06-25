@@ -43,24 +43,15 @@ class ProjectTelNumberSerializer(serializers.ModelSerializer):
 class ProjectSerializerUser(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = [
-            'id',
-            'name',
-            'targetAmount',
-            'currentAmount'
-        ]
+        fields = '__all__'
+        depth = 1
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = [
-            'id',
-            'name',
-            'targetAmount',
-            'currentAmount',
-            'date'
-        ]
+        fields = '__all__'
+        depth = 1
 
 
 class ProjectShowSerializer(serializers.ModelSerializer):

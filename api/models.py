@@ -1,5 +1,8 @@
 from django.db import models
 from django.utils import timezone
+from django.utils.timezone import make_aware
+from datetime import datetime
+import time
 
 # Create your models here.
 
@@ -32,7 +35,7 @@ class Project(models.Model):
     
     '''
     # tags =
-    date = models.DateTimeField(default=timezone.now)
+    date = models.DateTimeField(default=make_aware(datetime.fromtimestamp(time.time())).isoformat())
     # Дальше идут реквизиты
     telNumber = models.CharField(max_length=12, unique=True)
 
