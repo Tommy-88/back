@@ -4,3 +4,4 @@ from .models import *
 admin.site.register(User)
 admin.site.register(Project)
 admin.site.register(Transaction)
+admin.site.register(Authorization)

@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework import generics
 from .serializers import *
 import requests
+import secrets
 import time
 import json
 import random
@@ -40,43 +41,46 @@ class Payment(APIView):
     parser_classes = (JSONParser,)
 
     def get(self, request):
-        api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
-        buffer = request.data
-        s = requests.Session()
-        s.headers['authorization'] = 'Bearer ' + api_access_token
-        timestamp = int(time.time())
-        bill_id = str(timestamp * 1000) + str(random.randint(1000, 9999))  # + ID_user
-        # print(ProjectTelNumberSerializer(Project.objects.get(name__exact=buffer['id_project'])).data['telNumber'])
-        # print(UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'])
-        val = format(float(buffer['payment']), '.2f')
-        # Создание json для qiwi-запроса
-        app_json_props = {
-            "amount": {
-                "currency": "RUB",
-                "value": val,
-            },
-            "comment": "Test",
-            "expirationDateTime": buffer['expirationTime'],
-            "customer": {
-                "phone": ProjectTelNumberSerializer(Project.objects.get(id__exact=buffer['id_project'])).data[
-                    'telNumber'],
-                "email": UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'],
-            },
-            "customFields": {}
-        }
-        h1 = s.put('https://api.qiwi.com/partner/bill/v1/bills/' + bill_id, json=app_json_props)
-        # Добавление транзакции в таблицу
-        k = json.loads(h1.text)
-        t = Transaction(id_user=User.objects.get(id__exact=buffer['id_user']),
-                        id_projects=Project.objects.get(id__exact=buffer['id_project']), payment=val,
-                        status=k['status']['value'], siteId=k['siteId'], billId='bill_id',
-                        expirationTime=buffer['expirationTime'])
-        t.save()
-        """
-            Формат ответа в доках "Перечислить сумму"
-        """
-        return Response(h1, status=status.HTTP_200_OK)
-
+        stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
+        if stk == 1:
+            api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
+            buffer = request.data
+            s = requests.Session()
+            s.headers['authorization'] = 'Bearer ' + api_access_token
+            timestamp = int(time.time())
+            bill_id = str(timestamp * 1000) + str(random.randint(1000, 9999))  # + ID_user
+            # print(ProjectTelNumberSerializer(Project.objects.get(name__exact=buffer['id_project'])).data['telNumber'])
+            # print(UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'])
+            val = format(float(buffer['payment']), '.2f')
+            # Создание json для qiwi-запроса
+            app_json_props = {
+                "amount": {
+                    "currency": "RUB",
+                    "value": val,
+                },
+                "comment": "Test",
+                "expirationDateTime": buffer['expirationTime'],
+                "customer": {
+                    "phone": ProjectTelNumberSerializer(Project.objects.get(id__exact=buffer['id_project'])).data[
+                        'telNumber'],
+                    "email": UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'],
+                },
+                "customFields": {}
+            }
+            h1 = s.put('https://api.qiwi.com/partner/bill/v1/bills/' + bill_id, json=app_json_props)
+            # Добавление транзакции в таблицу
+            k = json.loads(h1.text)
+            t = Transaction(id_user=User.objects.get(id__exact=buffer['id_user']),
+                            id_projects=Project.objects.get(id__exact=buffer['id_project']), payment=val,
+                            status=1, siteId=k['siteId'], billId='bill_id',
+                            expirationTime=buffer['expirationTime'])
+            t.save()
+            """
+                Формат ответа в доках "Перечислить сумму"
+            """
+            return Response(h1, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
 # Обработчик для получения уведомлений об оплате
 # TODO требуется указать адрес сервера, пока не работает
@@ -155,12 +159,26 @@ class Registration(generics.CreateAPIView):
 """
 
 
-class CreateProject(generics.CreateAPIView):
-    serializer_class = ProjectSerializer
-    """
-        ответ - статус 201
-    """
-    Response(status=status.HTTP_201_CREATED)
+class CreateProject(APIView):
+    def get(self, request):
+        stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
+        buffer = request.data
+        if stk == 1:
+            k = Project()
+            k.name = buffer['name']
+            k.id_user = User.objects.get(id=buffer['id_user'])
+            k.targetAmount = buffer['targetAmount']
+            k.currentAmount = 0
+            k.description = buffer['description']
+            k.topic = buffer['topic']
+            k.telNumber = buffer['telNumber']
+            k.save()
+            return Response(status=status.HTTP_201_CREATED)
+            '''     
+            ответ - статус 201
+            '''
+        else:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 # Обработчик "Вывести 20 проектов", сортировка по дате, адрес http://localhost/api/v1/show/projects, запрос GET
@@ -250,13 +268,17 @@ class ShowProjectsTopicView(APIView):
 
 class ChangeProjectStatusView(APIView):
     def patch(self, request):
-        buffer = Project.objects.get(id__exact=request.data['id'])
-        buffer.isActive = False
-        buffer.save()
-        """
-            ответ - статус 200
-        """
-        return Response(status=status.HTTP_200_OK)
+        stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
+        if stk == 1:
+            buffer = Project.objects.get(id__exact=request.data['id'])
+            buffer.isActive = False
+            buffer.save()
+            """
+                ответ - статус 200
+            """
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
     # request.data['id']
 
@@ -272,6 +294,7 @@ class ChangeProjectStatusView(APIView):
 class ShowProjectView(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
+
     def get(self, request):
         buffer = Project.objects.get(id__exact=2)
         s = ProjectShowSerializer(buffer)
@@ -293,3 +316,19 @@ class ShowProjectView(APIView):
         return Response(s.data)
 
 
+class AuthorizationView(APIView):
+    renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser,)
+
+    def get(self, request):
+        buffer = request.data
+        staff = User.objects.filter(email=buffer['email'], password=buffer['password']).count()
+        if staff == 0:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+        else:
+            d = Authorization()
+            d.id_user=User.objects.get(email=buffer['email'])
+            d.token=secrets.token_hex(16)
+            d.save()
+            k = AuthorizationSerializer(Authorization.objects.filter(id_user=User.objects.get(email=buffer['email']).id),  many=True)
+            return Response(k.data, status=status.HTTP_200_OK)

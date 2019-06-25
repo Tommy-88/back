@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import *
 
+
 # Сериалайзеры со всеми полями для каждой модели
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -61,8 +62,23 @@ class ProjectListSerializer(serializers.ModelSerializer):
             'date'
         ]
 
+
 class ProjectShowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = '__all__'
         depth = 1
+
+
+class UserAuthorizationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id']
+
+
+class AuthorizationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Authorization
+        fields = '__all__'
+
+

@@ -28,6 +28,9 @@ class Project(models.Model):
     )
     topic = models.IntegerField(choices=TOPIC_TYPES)
     # TODO Для тегов надо подумать, как хранить их в базе
+    '''
+    
+    '''
     # tags =
     date = models.DateTimeField(default=timezone.now)
     # Дальше идут реквизиты
@@ -46,10 +49,15 @@ class Transaction(models.Model):
         (4, 'EXPIRED'),  # время жизни истекло, счёт не оплачен
     )
     status = models.IntegerField(choices=STATUS_TYPES)
-    status = models.TextField()
     expirationTime = models.CharField(max_length=120)
     siteId = models.TextField()
     billId = models.TextField()
+
+class Authorization(models.Model):
+    id_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    token = models.CharField(max_length=150)
+
+
 
 # TODO обсудить добавление комментариев, продумать модель
 
