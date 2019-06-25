@@ -7,9 +7,11 @@ from rest_framework.parsers import JSONParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
+from django.utils.timezone import make_aware
 from rest_framework import status
 from rest_framework import generics
 from .serializers import *
+from datetime import datetime
 import requests
 import secrets
 import time
@@ -36,49 +38,113 @@ from .models import *
 """
 
 
+def create_transaction(amount, payment_type, id_user, id_projects, id_site=None):
+    timestamp = int(time.time())
+    bill_id = str(timestamp * 1000) + str(random.randint(1000, 9999))
+    return Transaction(
+        id_user=id_user,
+        id_projects=id_projects,
+        payment_type=payment_type,
+        payment=amount,
+        status=1,
+        siteId=id_site,
+        billId=bill_id,
+        expirationTime=make_aware(datetime.fromtimestamp(time.time() + 7200))
+    )
+
+
 class Payment(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
 
     def get(self, request):
+        # TODO ссылка для успешной оплаты
+        successURL = "http://success"
+
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
         if stk == 1:
-            api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
             buffer = request.data
-            s = requests.Session()
-            s.headers['authorization'] = 'Bearer ' + api_access_token
-            timestamp = int(time.time())
-            bill_id = str(timestamp * 1000) + str(random.randint(1000, 9999))  # + ID_user
-            # print(ProjectTelNumberSerializer(Project.objects.get(name__exact=buffer['id_project'])).data['telNumber'])
-            # print(UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'])
-            val = format(float(buffer['payment']), '.2f')
-            # Создание json для qiwi-запроса
-            app_json_props = {
-                "amount": {
-                    "currency": "RUB",
-                    "value": val,
-                },
-                "comment": "Test",
-                "expirationDateTime": buffer['expirationTime'],
-                "customer": {
-                    "phone": ProjectTelNumberSerializer(Project.objects.get(id__exact=buffer['id_project'])).data[
-                        'telNumber'],
-                    "email": UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'],
-                },
-                "customFields": {}
-            }
-            h1 = s.put('https://api.qiwi.com/partner/bill/v1/bills/' + bill_id, json=app_json_props)
-            # Добавление транзакции в таблицу
-            k = json.loads(h1.text)
-            t = Transaction(id_user=User.objects.get(id__exact=buffer['id_user']),
-                            id_projects=Project.objects.get(id__exact=buffer['id_project']), payment=val,
-                            status=1, siteId=k['siteId'], billId='bill_id',
-                            expirationTime=buffer['expirationTime'])
-            t.save()
-            """
-                Формат ответа в доках "Перечислить сумму"
-            """
-            return Response(h1, status=status.HTTP_200_OK)
+            payment_type = buffer['payment_type']
+
+            transaction = create_transaction(
+                amount=buffer['payment'],
+                payment_type=payment_type,
+                id_user=User.objects.get(id__exact=buffer['id_user']),
+                id_projects=Project.objects.get(id__exact=buffer['id_project'])
+            )
+
+            if payment_type == "2":
+                # Подтянуть с фронта при выборе яндекса "PC" - кошелек, "AC" - банковская карта
+                yandex_payment_type = buffer['yandex_payment_type']
+
+                url = "https://money.yandex.ru/quickpay/confirm.xml?receiver=410011023824487&label=" + \
+                transaction.billId + "&quickpay-form=donate&targets=Crowdfunding&need-fio=false&need-email=false&" + \
+                "need-phone=false&need-address=false&successURL=" + successURL + "&paymentType=" + \
+                yandex_payment_type + "&sum=" + format(float(transaction.payment), '.2f')
+
+                response = "{'payUrl':'" + url + "'}"
+
+                return Response(response, status=status.HTTP_200_OK)
+            elif payment_type == "3":
+                url = "https://partner.rficb.ru/alba/input/?key=tAZ61uoeUQ2cobNpP1J4BEN9BPN29nz7p8r2n3Lg5VU=&" + \
+                      "cost=" + format(float(transaction.payment), '.2f') + "&name=Crowdfunding&order_id=" + \
+                      transaction.billId
+
+                response = "{'payUrl':'" + url + "'}"
+
+                return Response(response, status=status.HTTP_200_OK)
+            else:
+                api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
+                s = requests.Session()
+                s.headers['authorization'] = 'Bearer ' + api_access_token
+
+                # timestamp = int(time.time())
+                # bill_id = str(timestamp * 1000) + str(random.randint(1000, 9999))  # + ID_user
+
+
+
+
+
+                # print(ProjectTelNumberSerializer(Project.objects.get(name__exact=buffer['id_project'])).data['telNumber'])
+                # print(UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'])
+
+                val = format(float(buffer['payment']), '.2f')
+                # Создание json для qiwi-запроса
+                app_json_props = {
+                    "amount": {
+                        "currency": "RUB",
+                        "value": val,
+                    },
+                    "comment": "Test",
+                    "expirationDateTime": transaction.expirationTime.isoformat(),
+                    "customer": {
+                        "phone": ProjectTelNumberSerializer(Project.objects.get(id__exact=buffer['id_project'])).data[
+                            'telNumber'],
+                        "email": UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'],
+                    },
+                    "customFields": {}
+                }
+
+                h1 = s.put('https://api.qiwi.com/partner/bill/v1/bills/' + transaction.billId, json=app_json_props)
+                # Добавление транзакции в таблицу
+                k = json.loads(h1.text)
+
+                transaction.siteId = k['siteId']
+                transaction.save()
+
+                """
+                t = Transaction(id_user=User.objects.get(id__exact=buffer['id_user']),
+                                id_projects=Project.objects.get(id__exact=buffer['id_project']), payment=val,
+                                status=1, siteId=k['siteId'], billId='bill_id',
+                                expirationTime=buffer['expirationTime'])
+                t.save()
+                """
+                """
+                    Формат ответа в доках "Перечислить сумму"
+                """
+                response = "{'payUrl':'" + k['payUrl'] + "'}"
+
+                return Response(response, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
@@ -332,3 +398,116 @@ class AuthorizationView(APIView):
             d.save()
             k = AuthorizationSerializer(Authorization.objects.filter(id_user=User.objects.get(email=buffer['email']).id),  many=True)
             return Response(k.data, status=status.HTTP_200_OK)
+
+
+class YandexCallbackView(APIView):
+    renderer_classes = (JSONRenderer,)
+
+    def check_hash(self, **kwargs):
+        prepared = \
+            kwargs.get("notification_type", "") + "&" + \
+            kwargs.get("operation_id", "") + "&" + \
+            kwargs.get("amount", "") + "&" + \
+            kwargs.get("currency", "") + "&" + \
+            kwargs.get("datetime", "") + "&" + \
+            kwargs.get("sender", "") + "&" + \
+            kwargs.get("codepro", "") + "&" + \
+            kwargs.get("notification_secret", "") + "&" + \
+            kwargs.get("label", "")
+
+        signature = hashlib.sha1(prepared.encode()).hexdigest()
+        return signature == kwargs.get("sha1_hash")
+
+    def post(self, request):
+        yamoney_secret = 'gdsU+UQl3k/9bOziaeWWWGoV'
+
+        validation_result = self.check_hash(
+                notification_type=request.data['notification_type'],
+                operation_id=request.data['operation_id'],
+                amount=request.data['amount'],
+                currency=request.data['currency'],
+                datetime=request.data['datetime'],
+                sender=request.data['sender'],
+                codepro=request.data['codepro'],
+                notification_secret=yamoney_secret,
+                label=request.data['label'],
+                sha1_hash=request.data['sha1_hash'])
+
+        if not validation_result:
+            print("Yandex.money notification data validation failed. Request:")
+            print(request.data)
+            return Response(status=status.HTTP_200_OK)
+
+        # payment id stored in label field
+        payment_id = request.data['label']
+
+        try:
+            transaction = Transaction.objects.get(billId=payment_id)
+        except Transaction.DoesNotExist:
+            return Response(status=status.HTTP_200_OK)
+
+        if request.data['unaccepted'] == "true":
+            print("Transaction unaccepted")
+            return Response(status=status.HTTP_200_OK)
+
+        transaction.status = 2
+        transaction.save()
+
+        return Response(status=status.HTTP_200_OK)
+
+
+class RFIBankCallbackView(APIView):
+    renderer_classes = (JSONRenderer,)
+
+    def check_hash(self, **kwargs):
+        prepared = \
+            kwargs.get("tid", "") + \
+            kwargs.get("name", "") + \
+            kwargs.get("comment", "") + \
+            kwargs.get("partner_id", "") + \
+            kwargs.get("service_id", "") + \
+            kwargs.get("order_id", "") + \
+            kwargs.get("type", "") + \
+            kwargs.get("partner_income", "") + \
+            kwargs.get("system_income", "")
+
+        prepared += kwargs.get("secret", "")
+        print(prepared)
+        signature = hashlib.md5(prepared.encode()).hexdigest()
+        print(signature)
+        return signature == kwargs.get("check")
+
+    def post(self, request):
+        rfibank_secret = 'ad64bdb6c1'
+
+        validation_result = self.check_hash(
+                tid=request.data['tid'],
+                name=request.data['name'],
+                comment=request.data['comment'],
+                partner_id=request.data['partner_id'],
+                service_id=request.data['service_id'],
+                order_id=request.data['order_id'],
+                type=request.data['type'],
+                partner_income=request.data['partner_income'],
+                system_income=request.data['system_income'],
+                check=request.data['check'],
+                secret=rfibank_secret,
+                )
+
+        if not validation_result:
+            print("RFI Bank notification data validation failed. Request:")
+            print(request.data)
+            return Response(status=status.HTTP_200_OK)
+
+        # payment id stored in label field
+        payment_id = request.data['order_id']
+
+        try:
+            transaction = Transaction.objects.get(billId=payment_id)
+        except Transaction.DoesNotExist:
+            return Response(status=status.HTTP_200_OK)
+
+        transaction.status = 2
+        transaction.save()
+
+        return Response(status=status.HTTP_200_OK)

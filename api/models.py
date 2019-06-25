@@ -36,7 +36,8 @@ class Project(models.Model):
     # Дальше идут реквизиты
     telNumber = models.CharField(max_length=12, unique=True)
 
-# Транзакции для QIWI KASSA
+
+# Транзакции для QIWI, Yandex, RFI
 class Transaction(models.Model):
     # TODO Billid должен быть рандомное 6 значное число+unix - время в формате string; подумать, можно ли обойтись только им, как тогда его генерировать, если нет, то сдлеать id и BillId отдельно
     id_user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -48,10 +49,19 @@ class Transaction(models.Model):
         (3, 'REJECTED'),  # отклонен
         (4, 'EXPIRED'),  # время жизни истекло, счёт не оплачен
     )
+
+    PAYMENT_TYPE = (
+        (1, 'QIWI'),
+        (2, 'YANDEX'),
+        (3, 'RFI')
+    )
+
     status = models.IntegerField(choices=STATUS_TYPES)
-    expirationTime = models.CharField(max_length=120)
+    payment_type = models.IntegerField(choices=PAYMENT_TYPE)
+    expirationTime = models.DateTimeField()
     siteId = models.TextField()
     billId = models.TextField()
+
 
 class Authorization(models.Model):
     id_user = models.ForeignKey(User, on_delete=models.CASCADE)

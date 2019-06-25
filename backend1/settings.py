@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+USE_TZ = True
 
 # Application definition
 
