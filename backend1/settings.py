@@ -15,7 +15,6 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
@@ -25,7 +24,7 @@ SECRET_KEY = '%g)dm^2q!ir@g!zmr5&x_w0kx!^y-%k1k6=s1v=*gno1g9iwp_'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['95.179.136.92',]
+ALLOWED_HOSTS = ['95.179.136.92', '127.0.0.1']
 
 USE_TZ = True
 
@@ -41,20 +40,20 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'rest_framework',
     'corsheaders',
-    #'rest_framework.authtoken',
+    # 'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
-    
-   'django.middleware.security.SecurityMiddleware',
-   'corsheaders.middleware.CorsMiddleware',
-   'django.contrib.sessions.middleware.SessionMiddleware',
+
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
+
     'django.middleware.common.CommonMiddleware',
 ]
 
@@ -81,7 +80,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend1.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
@@ -91,7 +89,6 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
@@ -119,12 +116,12 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
-#    'DEFAULT_AUTHENTICATION_CLASSES': (
-  #      'rest_framework.authentication.TokenAuthentication',
-  #  ),
-#    'DEFAULT_PERMISSION_CLASSES': (
- #       'rest_framework.permissions.IsAuthenticated',
-  #  ),
+    #    'DEFAULT_AUTHENTICATION_CLASSES': (
+    #      'rest_framework.authentication.TokenAuthentication',
+    #  ),
+    #    'DEFAULT_PERMISSION_CLASSES': (
+    #       'rest_framework.permissions.IsAuthenticated',
+    #  ),
 }
 
 # Internationalization
@@ -139,7 +136,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/

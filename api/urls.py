@@ -4,7 +4,8 @@ from .views import *
 
 # TODO сделать нормальные url, утвердить с фронтом
 urlpatterns = [
-    path('hello', Payment.as_view()),
+    path('payment/create', Payment.as_view()),
+    path('payment/get', GetPayment.as_view()),
     path('user/create', Registration.as_view()),
     path('project/create', CreateProject.as_view()),
     path('show/projects', ProjectListView.as_view()),

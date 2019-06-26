@@ -403,6 +403,20 @@ class AuthorizationView(APIView):
             k = AuthorizationSerializer(Authorization.objects.filter(id_user=User.objects.get(email=buffer['email']).id),  many=True)
             return Response(k.data, status=status.HTTP_200_OK)
 
+
+class GetPayment(APIView):
+    renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser,)
+
+    def post(self, request):
+        stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
+        if stk == 1:
+            buffer = Transaction.objects.get(billId=request.data['billId'])
+            s = TransactionSerializer(buffer)
+            return Response(s.data)
+
+
+
 class DeAuthorizationView(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
