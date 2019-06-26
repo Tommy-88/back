@@ -254,7 +254,7 @@ class CreateProject(APIView):
 # Обработчик "Вывести 20 проектов", сортировка по дате, адрес http://localhost/api/v1/show/projects, запрос GET
 class ProjectListView(generics.ListAPIView):
     serializer_class = ProjectListSerializer
-    queryset = Project.objects.all().order_by('date')
+    queryset = Project.objects.all().order_by('date').reverse()
     """
         ответ - json файл с списком проектов
         Пример 
