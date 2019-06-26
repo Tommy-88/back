@@ -425,6 +425,7 @@ class DeAuthorizationView(APIView):
         buffer = request.data
         if stk == 1:
             Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).delete()
+            return Response(status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
