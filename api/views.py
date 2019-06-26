@@ -53,6 +53,18 @@ def create_transaction(amount, payment_type, id_user, id_projects, id_site=None)
     )
 
 
+class GetPayment(APIView):
+    renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser,)
+
+    def post(self, request):
+        stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
+        if stk == 1:
+            buffer = Transaction.objects.get(billId=request.data['billId'])
+            s = TransactionSerializer(buffer)
+            return Response(s.data)
+
+
 class Payment(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
