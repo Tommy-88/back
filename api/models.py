@@ -7,8 +7,6 @@ import time
 # Create your models here.
 
 # TODO эта модель не является дефолтной (создается отдельная таблица), подумать, как можно сделать юзеров в одной дефолтной модели
-# TODO подумать, как сделать авторизацию
-# TODO еще раз обсудить модели; там, где нужно, поменять поля
 class User(models.Model):
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=30)
@@ -22,7 +20,6 @@ class Project(models.Model):
     currentAmount = models.FloatField(default=0)
     description = models.TextField()
     isActive = models.BooleanField(default=True)
-    # TODO обсудить, какие темы будут, добавить
     TOPIC_TYPES = (
         (1, 'Science'),
         (2, 'IT'),
@@ -37,12 +34,11 @@ class Project(models.Model):
     # tags =
     date = models.DateTimeField(default=make_aware(datetime.fromtimestamp(time.time())).isoformat())
     # Дальше идут реквизиты
-    telNumber = models.CharField(max_length=12, unique=True)
+    telNumber = models.CharField(max_length=12, unique=False)
 
 
 # Транзакции для QIWI, Yandex, RFI
 class Transaction(models.Model):
-    # TODO Billid должен быть рандомное 6 значное число+unix - время в формате string; подумать, можно ли обойтись только им, как тогда его генерировать, если нет, то сдлеать id и BillId отдельно
     id_user = models.ForeignKey(User, on_delete=models.CASCADE)
     id_projects = models.ForeignKey(Project, on_delete=models.CASCADE)
     payment = models.FloatField()
@@ -72,5 +68,5 @@ class Authorization(models.Model):
 
 
 
-# TODO обсудить добавление комментариев, продумать модель
+# TODO можно добавить комментарии, в модели ключ будет сслытаься на ключи внутри себя для реализации вложенности комментариев
 

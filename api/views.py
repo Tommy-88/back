@@ -1,5 +1,4 @@
 import binascii
-
 from django.shortcuts import render
 from django.views.generic import View
 from rest_framework.renderers import JSONRenderer
@@ -58,7 +57,7 @@ class Payment(APIView):
     parser_classes = (JSONParser,)
 
     def get(self, request):
-        # TODO ссылка для успешной оплаты
+        # Ссылка для успешной оплаты
         successURL = "http://success"
 
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
@@ -149,13 +148,11 @@ class Payment(APIView):
             return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
 # Обработчик для получения уведомлений об оплате
-# TODO требуется указать адрес сервера, пока не работает
 class CheckPayment(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
 
     def post(self, request):
-        # TODO получить сигнатуру из запроса обновить статус транзакции в бд и currentAmount у проекта
         s = requests.Session()
         signature = request.META['HTTP_X_API_SIGNATURE_SHA256']
         buffer = request.data
@@ -180,7 +177,6 @@ class CheckPayment(APIView):
             return Response({"error" : "1"})
 
 # Обработчик "Регистрация", отправляется json с параметрами, адрес http://localhost/api/v1/user/create, запрос POST
-# TODO Можно сделать отправку уведомления на почту, по идее это делается не особо сложно
 """
     Пример json 
     {
@@ -407,6 +403,36 @@ class AuthorizationView(APIView):
             k = AuthorizationSerializer(Authorization.objects.filter(id_user=User.objects.get(email=buffer['email']).id),  many=True)
             return Response(k.data, status=status.HTTP_200_OK)
 
+class DeAuthorizationView(APIView):
+    renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser,)
+    def post(self, request):
+        stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
+        buffer = request.data
+        if stk == 1:
+            Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).delete()
+        else:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+class ChangeDescriptionProjectView(APIView):
+    renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser,)
+    def patch(self, request):
+        stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
+        if stk == 1:
+            p = Project.objects.get(id_exact=request.data['id'])
+            p.telNumber = request.data['telNumber']
+            p.topic = request.data['topic']
+            p.description = request.data['description']
+            p.targetAmount = request.data['targetAmount']
+            p.name = request.data['name']
+            p.date = request.data['date']
+            p.isActive = request.data['isActive']
+            p.save()
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
 class YandexCallbackView(APIView):
     renderer_classes = (JSONRenderer,)

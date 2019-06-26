@@ -13,6 +13,8 @@ urlpatterns = [
     path('project/topic', ShowProjectsTopicView.as_view()),
     path('project/status', ChangeProjectStatusView.as_view()),
     path('show/project', ShowProjectView.as_view()),
+    path('user/deauthorization', DeAuthorizationView.as_view()),
+    path('user/changeproject', ChangeDescriptionProjectView.as_view() ),
     path('user/authorization', AuthorizationView.as_view()),
     path('payment/yandex_callback', YandexCallbackView.as_view()),
     path('payment/rfibank_callback', RFIBankCallbackView.as_view()),
