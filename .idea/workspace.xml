@@ -3,8 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a25fcf1e-d5aa-48e6-880f-85b29bfaaf5e" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/api/views.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/venv/" />
@@ -53,8 +51,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/api/views.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="261">
-              <caret line="434" column="65" selection-start-line="434" selection-start-column="65" selection-end-line="434" selection-end-column="65" />
+            <state relative-caret-position="-7099">
+              <caret line="59" column="36" lean-forward="true" selection-start-line="59" selection-start-column="36" selection-end-line="59" selection-end-column="36" />
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
                 <element signature="e#1164#1553#0" />
@@ -202,7 +200,7 @@
       <updated>1561484661325</updated>
       <workItem from="1561484665064" duration="4368000" />
       <workItem from="1561489071124" duration="3030000" />
-      <workItem from="1561559199466" duration="2977000" />
+      <workItem from="1561559199466" duration="3338000" />
     </task>
     <task id="LOCAL-00001" summary="уведомление qiwi">
       <created>1561500714746</created>
@@ -218,11 +216,18 @@
       <option name="project" value="LOCAL" />
       <updated>1561504065484</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="уведомление qiwi">
+      <created>1561562183873</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1561562183873</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="15184000" />
+    <option name="totallyTimeSpent" value="15545000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
@@ -367,8 +372,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/api/views.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="261">
-          <caret line="434" column="65" selection-start-line="434" selection-start-column="65" selection-end-line="434" selection-end-column="65" />
+        <state relative-caret-position="-7099">
+          <caret line="59" column="36" lean-forward="true" selection-start-line="59" selection-start-column="36" selection-end-line="59" selection-end-column="36" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
             <element signature="e#1164#1553#0" />

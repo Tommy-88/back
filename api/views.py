@@ -56,7 +56,7 @@ class Payment(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
 
-    def get(self, request):
+    def post(self, request):
         # Ссылка для успешной оплаты
         successURL = "http://success"
 
@@ -254,7 +254,7 @@ class CreateProject(APIView):
 # Обработчик "Вывести 20 проектов", сортировка по дате, адрес http://localhost/api/v1/show/projects, запрос GET
 class ProjectListView(generics.ListAPIView):
     serializer_class = ProjectListSerializer
-    queryset = Project.objects.all().order_by('date')[:20]
+    queryset = Project.objects.all().order_by('date')
     """
         ответ - json файл с списком проектов
         Пример 
@@ -295,7 +295,7 @@ class ProjectListView(generics.ListAPIView):
 
 class ShowUserProjectsView(APIView):
 
-    def get(self, request):
+    def post(self, request):
         buffer = ProjectSerializerUser(Project.objects.filter(id_user=request.data['id']), many=True)
         return Response(buffer.data)
 
@@ -310,7 +310,7 @@ class ShowUserProjectsView(APIView):
 
 
 class ShowProjectsTopicView(APIView):
-    def get(self, request):
+    def post(self, request):
         buffer = ProjectListSerializer(Project.objects.filter(topic=request.data['topic']), many=True)
         """
             Пример ответа
@@ -365,8 +365,8 @@ class ShowProjectView(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
 
-    def get(self, request):
-        buffer = Project.objects.get(id__exact=2)
+    def post(self, request):
+        buffer = Project.objects.get(id__exact=request.data['id'])
         s = ProjectShowSerializer(buffer)
         """
             Пример ответа json
@@ -390,7 +390,7 @@ class AuthorizationView(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
 
-    def get(self, request):
+    def post(self, request):
         buffer = request.data
         staff = User.objects.filter(email=buffer['email'], password=buffer['password']).count()
         if staff == 0:
