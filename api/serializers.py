@@ -71,5 +71,6 @@ class AuthorizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Authorization
         fields = '__all__'
+        depth = 1
 
 

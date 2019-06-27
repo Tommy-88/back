@@ -156,19 +156,20 @@ class CheckPayment(APIView):
         s = requests.Session()
         signature = request.META['HTTP_X_API_SIGNATURE_SHA256']
         buffer = request.data
-        invoice_parameters = buffer['amount']['currency'] + "|" + buffer['amount']['value'] + "|" + buffer[
-            'billId'] + "|" + buffer['siteId'] + "|" + buffer['status']['value']
+        invoice_parameters = str(buffer['bill']['amount']['currency']) + "|" + str(buffer['bill']['amount']['value']) + "|" + str(buffer['bill'][
+            'billId']) + "|" + str(buffer['bill']['siteId']) + "|" + str(buffer['bill']['status']['value'])
         api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
-
-        dig = hmac.digest(api_access_token, msg=invoice_parameters, digest=hashlib.sha256)
+        print(invoice_parameters)
+        dig = hmac.new(api_access_token.encode('UTF-8'), msg=invoice_parameters.encode('UTF-8'), digestmod=hashlib.sha256).hexdigest()
         print(signature)
         print(dig)
-        if dig == signature:
-            h3 = s.get('https://api.qiwi.com/partner/bill/v1/bills/' + buffer['billId'])
-            k=json.loads(h3.text)
-            t = Transaction.objects.filter(billId=k['billId'])
-            pr=Project.objects.filter(id__exact=t.id_user)
-            pr.currentAmount+=float(k['value'])
+        if buffer['bill']['status']['value'] == 'PAID':
+            t = Transaction.objects.get(billId=buffer['bill']['billId'])
+            pr=Project.objects.get(id__exact=t.id_projects.id)
+            print(buffer['bill']['amount']['value'])
+            print(float(buffer['bill']['amount']['value']))
+
+            pr.currentAmount+=float(buffer['bill']['amount']['value'])
             pr.save()
             t.status = 2
             t.save()
@@ -436,13 +437,12 @@ class ChangeDescriptionProjectView(APIView):
     def patch(self, request):
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
         if stk == 1:
-            p = Project.objects.get(id_exact=request.data['id'])
+            p = Project.objects.get(id__exact=request.data['id'])
             p.telNumber = request.data['telNumber']
             p.topic = request.data['topic']
             p.description = request.data['description']
             p.targetAmount = request.data['targetAmount']
             p.name = request.data['name']
-            p.date = request.data['date']
             p.isActive = request.data['isActive']
             p.save()
             return Response(status=status.HTTP_200_OK)
@@ -498,6 +498,10 @@ class YandexCallbackView(APIView):
         if request.data['unaccepted'] == "true":
             print("Transaction unaccepted")
             return Response(status=status.HTTP_200_OK)
+
+        project = Project.objects.get(id__exact=transaction.id_projects.id)
+        project.currentAmount += float(request.data['amount'])
+        project.save()
 
         transaction.status = 2
         transaction.save()
@@ -555,6 +559,10 @@ class RFIBankCallbackView(APIView):
             transaction = Transaction.objects.get(billId=payment_id)
         except Transaction.DoesNotExist:
             return Response(status=status.HTTP_200_OK)
+
+        project = Project.objects.get(id__exact=transaction.id_projects.id)
+        project.currentAmount += float(request.data['system_income'])
+        project.save()
 
         transaction.status = 2
         transaction.save()
