@@ -351,8 +351,13 @@ class ChangeProjectStatusView(APIView):
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
         if stk == 1:
             buffer = Project.objects.get(id__exact=request.data['id'])
-            buffer.isActive = not buffer.isActive
-            buffer.save()
+            if buffer.isActive:
+                buffer.isActive = False
+                buffer.save()
+                return Response(status=status.HTTP_200_OK)
+            else:
+                buffer.isActive = True
+                buffer.save()
             """
                 ответ - статус 200
             """
