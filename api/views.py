@@ -2,7 +2,7 @@ import binascii
 from django.shortcuts import render
 from django.views.generic import View
 from rest_framework.renderers import JSONRenderer
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import JSONParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -72,24 +72,32 @@ class Payment(APIView):
                 id_projects=Project.objects.get(id__exact=buffer['id_project'])
             )
 
+            phone = ProjectTelNumberSerializer(Project.objects.get(id__exact=buffer['id_project'])).data['telNumber']
+
             if payment_type == "2":
                 # Подтянуть с фронта при выборе яндекса "PC" - кошелек, "AC" - банковская карта
                 yandex_payment_type = buffer['yandex_payment_type']
 
                 url = "https://money.yandex.ru/quickpay/confirm.xml?receiver=410011023824487&label=" + \
-                transaction.billId + "&quickpay-form=donate&targets=Crowdfunding&need-fio=false&need-email=false&" + \
-                "need-phone=false&need-address=false&successURL=" + successURL + "&paymentType=" + \
-                yandex_payment_type + "&sum=" + format(float(transaction.payment), '.2f')
+                      transaction.billId + "&sum=" + format(float(transaction.payment), '.2f') \
+                      + "&quickpay-form=donate&targets=" + phone + "&need-fio=false&need-email=false&" + \
+                      "need-phone=false&need-address=false&successURL=" + successURL + "&paymentType=" + \
+                      yandex_payment_type
 
                 response = "{'payUrl':'" + url + "'}"
+                transaction.siteId="none"
+                transaction.save()
 
                 return Response(response, status=status.HTTP_200_OK)
             elif payment_type == "3":
                 url = "https://partner.rficb.ru/alba/input/?key=tAZ61uoeUQ2cobNpP1J4BEN9BPN29nz7p8r2n3Lg5VU=&" + \
-                      "cost=" + format(float(transaction.payment), '.2f') + "&name=Crowdfunding&order_id=" + \
+                      "cost=" + format(float(transaction.payment), '.2f') + "&name=" + phone + "&order_id=" + \
                       transaction.billId
 
                 response = "{'payUrl':'" + url + "'}"
+
+                transaction.siteId="none"
+                transaction.save()
 
                 return Response(response, status=status.HTTP_200_OK)
             else:
@@ -99,10 +107,6 @@ class Payment(APIView):
 
                 # timestamp = int(time.time())
                 # bill_id = str(timestamp * 1000) + str(random.randint(1000, 9999))  # + ID_user
-
-
-
-
 
                 # print(ProjectTelNumberSerializer(Project.objects.get(name__exact=buffer['id_project'])).data['telNumber'])
                 # print(UserEmailSerializer(User.objects.get(id__exact=buffer['id_user'])).data['email'])
@@ -147,6 +151,7 @@ class Payment(APIView):
         else:
             return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
+
 # Обработчик для получения уведомлений об оплате
 class CheckPayment(APIView):
     renderer_classes = (JSONRenderer,)
@@ -156,25 +161,30 @@ class CheckPayment(APIView):
         s = requests.Session()
         signature = request.META['HTTP_X_API_SIGNATURE_SHA256']
         buffer = request.data
-        invoice_parameters = buffer['amount']['currency'] + "|" + buffer['amount']['value'] + "|" + buffer[
-            'billId'] + "|" + buffer['siteId'] + "|" + buffer['status']['value']
+        invoice_parameters = str(buffer['bill']['amount']['currency']) + "|" + str(
+            buffer['bill']['amount']['value']) + "|" + str(buffer['bill'][
+                                                               'billId']) + "|" + str(
+            buffer['bill']['siteId']) + "|" + str(buffer['bill']['status']['value'])
         api_access_token = 'eyJ2ZXJzaW9uIjoiUDJQIiwiZGF0YSI6eyJwYXlpbl9tZXJjaGFudF9zaXRlX3VpZCI6ImY3M3htZy0wMCIsInVzZXJfaWQiOiI3OTMxOTc5MjIzOCIsInNlY3JldCI6ImE5NjY4OWE4OTJhZjczYzE2MTdiODdhZGE5MzM3MGE4NTVkYzYyYzJlZjc4ZjU5MzY0Nzg5ZjY4N2JkZTIxYjkifX0='
-
-        dig = hmac.digest(api_access_token, msg=invoice_parameters, digest=hashlib.sha256)
+        print(invoice_parameters)
+        dig = hmac.new(api_access_token.encode('UTF-8'), msg=invoice_parameters.encode('UTF-8'),
+                       digestmod=hashlib.sha256).hexdigest()
         print(signature)
         print(dig)
-        if dig == signature:
-            h3 = s.get('https://api.qiwi.com/partner/bill/v1/bills/' + buffer['billId'])
-            k=json.loads(h3.text)
-            t = Transaction.objects.filter(billId=k['billId'])
-            pr=Project.objects.filter(id__exact=t.id_user)
-            pr.currentAmount+=float(k['value'])
+        if buffer['bill']['status']['value'] == 'PAID':
+            t = Transaction.objects.get(billId=buffer['bill']['billId'])
+            pr = Project.objects.get(id__exact=t.id_projects.id)
+            print(buffer['bill']['amount']['value'])
+            print(float(buffer['bill']['amount']['value']))
+
+            pr.currentAmount += float(buffer['bill']['amount']['value'])
             pr.save()
             t.status = 2
             t.save()
-            return Response({"error" : "0"}, status=status.HTTP_200_OK)
+            return Response({"error": "0"}, status=status.HTTP_200_OK)
         else:
-            return Response({"error" : "1"})
+            return Response({"error": "1"})
+
 
 # Обработчик "Регистрация", отправляется json с параметрами, адрес http://localhost/api/v1/user/create, запрос POST
 """
@@ -341,7 +351,7 @@ class ChangeProjectStatusView(APIView):
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
         if stk == 1:
             buffer = Project.objects.get(id__exact=request.data['id'])
-            buffer.isActive = False
+            buffer.isActive = not buffer.isActive
             buffer.save()
             """
                 ответ - статус 200
@@ -397,10 +407,11 @@ class AuthorizationView(APIView):
             return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
         else:
             d = Authorization()
-            d.id_user=User.objects.get(email=buffer['email'])
-            d.token=secrets.token_hex(16)
+            d.id_user = User.objects.get(email=buffer['email'])
+            d.token = secrets.token_hex(16)
             d.save()
-            k = AuthorizationSerializer(Authorization.objects.filter(id_user=User.objects.get(email=buffer['email']).id),  many=True)
+            k = AuthorizationSerializer(
+                Authorization.objects.filter(id_user=User.objects.get(email=buffer['email']).id), many=True)
             return Response(k.data, status=status.HTTP_200_OK)
 
 
@@ -416,10 +427,10 @@ class GetPayment(APIView):
             return Response(s.data)
 
 
-
 class DeAuthorizationView(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
+
     def post(self, request):
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
         buffer = request.data
@@ -433,24 +444,26 @@ class DeAuthorizationView(APIView):
 class ChangeDescriptionProjectView(APIView):
     renderer_classes = (JSONRenderer,)
     parser_classes = (JSONParser,)
+
     def patch(self, request):
         stk = Authorization.objects.filter(token=request.META['HTTP_AUTHORIZATION']).count()
         if stk == 1:
-            p = Project.objects.get(id_exact=request.data['id'])
+            p = Project.objects.get(id__exact=request.data['id'])
             p.telNumber = request.data['telNumber']
             p.topic = request.data['topic']
             p.description = request.data['description']
             p.targetAmount = request.data['targetAmount']
             p.name = request.data['name']
-            p.date = request.data['date']
             p.isActive = request.data['isActive']
             p.save()
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_406_NOT_ACCEPTABLE)
 
+
 class YandexCallbackView(APIView):
     renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser, FormParser,) 
 
     def check_hash(self, **kwargs):
         prepared = \
@@ -471,16 +484,16 @@ class YandexCallbackView(APIView):
         yamoney_secret = 'gdsU+UQl3k/9bOziaeWWWGoV'
 
         validation_result = self.check_hash(
-                notification_type=request.data['notification_type'],
-                operation_id=request.data['operation_id'],
-                amount=request.data['amount'],
-                currency=request.data['currency'],
-                datetime=request.data['datetime'],
-                sender=request.data['sender'],
-                codepro=request.data['codepro'],
-                notification_secret=yamoney_secret,
-                label=request.data['label'],
-                sha1_hash=request.data['sha1_hash'])
+            notification_type=request.data['notification_type'],
+            operation_id=request.data['operation_id'],
+            amount=request.data['amount'],
+            currency=request.data['currency'],
+            datetime=request.data['datetime'],
+            sender=request.data['sender'],
+            codepro=request.data['codepro'],
+            notification_secret=yamoney_secret,
+            label=request.data['label'],
+            sha1_hash=request.data['sha1_hash'])
 
         if not validation_result:
             print("Yandex.money notification data validation failed. Request:")
@@ -499,6 +512,10 @@ class YandexCallbackView(APIView):
             print("Transaction unaccepted")
             return Response(status=status.HTTP_200_OK)
 
+        project = Project.objects.get(id__exact=transaction.id_projects.id)
+        project.currentAmount += float(request.data['amount'])
+        project.save()
+
         transaction.status = 2
         transaction.save()
 
@@ -507,6 +524,7 @@ class YandexCallbackView(APIView):
 
 class RFIBankCallbackView(APIView):
     renderer_classes = (JSONRenderer,)
+    parser_classes = (JSONParser, FormParser,) 
 
     def check_hash(self, **kwargs):
         prepared = \
@@ -530,18 +548,18 @@ class RFIBankCallbackView(APIView):
         rfibank_secret = 'ad64bdb6c1'
 
         validation_result = self.check_hash(
-                tid=request.data['tid'],
-                name=request.data['name'],
-                comment=request.data['comment'],
-                partner_id=request.data['partner_id'],
-                service_id=request.data['service_id'],
-                order_id=request.data['order_id'],
-                type=request.data['type'],
-                partner_income=request.data['partner_income'],
-                system_income=request.data['system_income'],
-                check=request.data['check'],
-                secret=rfibank_secret,
-                )
+            tid=request.data['tid'],
+            name=request.data['name'],
+            comment=request.data['comment'],
+            partner_id=request.data['partner_id'],
+            service_id=request.data['service_id'],
+            order_id=request.data['order_id'],
+            type=request.data['type'],
+            partner_income=request.data['partner_income'],
+            system_income=request.data['system_income'],
+            check=request.data['check'],
+            secret=rfibank_secret,
+        )
 
         if not validation_result:
             print("RFI Bank notification data validation failed. Request:")
@@ -555,6 +573,10 @@ class RFIBankCallbackView(APIView):
             transaction = Transaction.objects.get(billId=payment_id)
         except Transaction.DoesNotExist:
             return Response(status=status.HTTP_200_OK)
+
+        project = Project.objects.get(id__exact=transaction.id_projects.id)
+        project.currentAmount += float(request.data['system_income'])
+        project.save()
 
         transaction.status = 2
         transaction.save()
